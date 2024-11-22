@@ -1,5 +1,6 @@
 package ie.atu.week8.projectexercise;
 
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -10,9 +11,11 @@ import java.util.Optional;
 public class ProductService {
 
     private final ProductRepository productRepository;
+    private final RabbitTemplate rabbitTemplate;
 
     @Autowired
-    public ProductService(ProductRepository productRepository) {
+    public ProductService(ProductRepository productRepository, RabbitTemplate rabbitTemplate) {
+        this.rabbitTemplate = rabbitTemplate;
         this.productRepository = productRepository;
     }
 
@@ -25,7 +28,10 @@ public class ProductService {
     }
 
     public Product saveProduct(Product product) {
-        return productRepository.save(product);
+        Product savedProduct = productRepository.save(product);
+        rabbitTemplate.convertAndSend("productQueue", product);
+        System.out.println("Saved Product:" + product);
+        return savedProduct;
     }
 
     public void deleteProduct(Long id) {
